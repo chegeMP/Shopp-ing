@@ -5,8 +5,11 @@ export const dynamic = "force-dynamic";
 
 export async function GET() {
   try {
-    const { total: productCount } = listProducts();
-    const storeCount = listSupermarkets().length;
+    const [{ total: productCount }, stores] = await Promise.all([
+      listProducts(),
+      listSupermarkets(),
+    ]);
+    const storeCount = stores.length;
 
     return NextResponse.json({
       status: "healthy",

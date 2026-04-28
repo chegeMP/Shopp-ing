@@ -1,10 +1,11 @@
 "use client";
 
-import { supermarkets } from "@/data/supermarkets";
-import { StoreBadge } from "./StoreBadge";
 import type { Product } from "@/data/products";
+import { useCatalog } from "@/components/CatalogContext";
+import { StoreBadge } from "./StoreBadge";
 
 export function PriceBar({ product }: { product: Product }) {
+  const { supermarkets } = useCatalog();
   const sorted = [...product.prices].sort((a, b) => a.price - b.price);
   const minPrice = sorted[0].price;
   const maxPrice = sorted[sorted.length - 1].price;

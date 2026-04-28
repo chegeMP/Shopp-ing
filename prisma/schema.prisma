@@ -1,0 +1,76 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Supermarket {
+  id      String @id
+  name    String
+  initial String
+  color   String
+  bgLight String
+  tagline String
+  rating  Float
+
+  productPrices ProductPrice[]
+  variantPrices VariantPrice[]
+}
+
+model Product {
+  id       String @id
+  name     String
+  category String
+  unit     String
+  image    String
+
+  prices   ProductPrice[]
+  variants ProductVariant[]
+
+  @@index([category])
+}
+
+model ProductPrice {
+  id            Int     @id @default(autoincrement())
+  productId     String
+  supermarketId String
+  price         Int
+  onSale        Boolean @default(false)
+  originalPrice Int?
+
+  product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supermarket Supermarket @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, supermarketId])
+  @@index([supermarketId])
+}
+
+model ProductVariant {
+  variantId String @id
+  productId String
+  label     String
+  unit      String
+
+  product Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  prices  VariantPrice[]
+
+  @@index([productId])
+}
+
+model VariantPrice {
+  id            Int     @id @default(autoincrement())
+  variantId     String
+  supermarketId String
+  price         Int
+  onSale        Boolean @default(false)
+  originalPrice Int?
+
+  variant     ProductVariant @relation(fields: [variantId], references: [variantId], onDelete: Cascade)
+  supermarket Supermarket    @relation(fields: [supermarketId], references: [id], onDelete: Cascade)
+
+  @@unique([variantId, supermarketId])
+  @@index([supermarketId])
+}

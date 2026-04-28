@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listProducts, getLowestPrice } from "@/lib/store";
-import { supermarkets } from "@/data/supermarkets";
+import { listProducts, listSupermarkets, getLowestPrice } from "@/lib/store";
 
 export async function GET(req: NextRequest) {
   try {
@@ -12,7 +11,10 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const { data } = listProducts({ search: q.trim(), limit: 10 });
+    const [{ data }, supermarkets] = await Promise.all([
+      listProducts({ search: q.trim(), limit: 10 }),
+      listSupermarkets(),
+    ]);
 
     const results = data.map((p) => {
       const lowest = getLowestPrice(p);

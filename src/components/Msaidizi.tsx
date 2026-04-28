@@ -1,8 +1,15 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { products, getLowestPrice, getHighestPrice, getSavings, categories, type Category } from "@/data/products";
-import { supermarkets } from "@/data/supermarkets";
+import type { Product } from "@/data/products";
+import type { Supermarket } from "@/data/supermarkets";
+import {
+  getLowestPrice,
+  getHighestPrice,
+  getSavings,
+  categories,
+} from "@/data/products";
+import { useCatalog } from "@/components/CatalogContext";
 
 interface Message {
   id: number;
@@ -10,7 +17,11 @@ interface Message {
   text: string;
 }
 
-function generateReply(input: string): string {
+function generateReply(
+  input: string,
+  ctx: { products: Product[]; supermarkets: Supermarket[] }
+): string {
+  const { products, supermarkets } = ctx;
   const q = input.toLowerCase().trim();
 
   // Greetings
@@ -178,6 +189,7 @@ function generateReply(input: string): string {
 }
 
 export function Msaidizi() {
+  const { products, supermarkets } = useCatalog();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([
     {
@@ -207,7 +219,7 @@ export function Msaidizi() {
     setInput("");
 
     setTimeout(() => {
-      const reply = generateReply(text);
+      const reply = generateReply(text, { products, supermarkets });
       const botMsg: Message = {
         id: nextId.current++,
         from: "msaidizi",
@@ -215,7 +227,7 @@ export function Msaidizi() {
       };
       setMessages((prev) => [...prev, botMsg]);
     }, 300 + Math.random() * 400);
-  }, [input]);
+  }, [input, products, supermarkets]);
 
   return (
     <>

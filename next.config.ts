@@ -5,6 +5,7 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   compress: true,
   reactStrictMode: true,
+  serverExternalPackages: ["@prisma/client", "prisma"],
   headers: async () => [
     {
       source: "/api/:path*",

@@ -3,13 +3,12 @@
 import { useState, useMemo, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
-  products,
   type Category,
   getLowestPrice,
   getHighestPrice,
   getSavings,
 } from "@/data/products";
-import { supermarkets } from "@/data/supermarkets";
+import { useCatalog } from "@/components/CatalogContext";
 import { SearchBar } from "@/components/SearchBar";
 import { CategoryFilter } from "@/components/CategoryFilter";
 import { PriceBar } from "@/components/PriceBar";
@@ -18,6 +17,7 @@ import { ProductImage } from "@/components/ProductImage";
 import { useBasket } from "@/components/BasketContext";
 
 function CompareContent() {
+  const { products, supermarkets } = useCatalog();
   const searchParams = useSearchParams();
   const preselected = searchParams.get("product");
   const [search, setSearch] = useState("");
@@ -33,7 +33,7 @@ function CompareContent() {
       const matchCat = !category || p.category === category;
       return matchSearch && matchCat;
     });
-  }, [search, category]);
+  }, [search, category, products]);
 
   const active = selectedProduct
     ? products.find((p) => p.id === selectedProduct)

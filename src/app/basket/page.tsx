@@ -4,11 +4,12 @@ import { useMemo } from "react";
 import { useBasket } from "@/components/BasketContext";
 import { StoreBadge } from "@/components/StoreBadge";
 import { ProductImage } from "@/components/ProductImage";
-import { products, getLowestPrice, getHighestPrice } from "@/data/products";
-import { supermarkets } from "@/data/supermarkets";
+import { getLowestPrice, getHighestPrice } from "@/data/products";
 import Link from "next/link";
+import { useCatalog } from "@/components/CatalogContext";
 
 export default function BasketPage() {
+  const { products, supermarkets } = useCatalog();
   const {
     items,
     removeItem,
@@ -25,7 +26,7 @@ export default function BasketPage() {
         product: products.find((p) => p.id === item.productId),
       }))
       .filter((item) => item.product !== undefined);
-  }, [items]);
+  }, [items, products]);
 
   const supermarketTotals = useMemo(() => {
     return supermarkets

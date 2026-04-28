@@ -1,10 +1,11 @@
 import type { MetadataRoute } from "next";
-import { supermarkets } from "@/data/supermarkets";
-import { products } from "@/data/products";
+import { getCachedCatalog } from "@/lib/catalog";
 
 const BASE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const { products, supermarkets } = await getCachedCatalog();
+
   const staticPages: MetadataRoute.Sitemap = [
     { url: BASE_URL, lastModified: new Date(), changeFrequency: "daily", priority: 1 },
     { url: `${BASE_URL}/compare`, lastModified: new Date(), changeFrequency: "daily", priority: 0.9 },

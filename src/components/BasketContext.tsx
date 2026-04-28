@@ -9,7 +9,7 @@ import {
   useRef,
   type ReactNode,
 } from "react";
-import { products } from "@/data/products";
+import { useCatalog } from "@/components/CatalogContext";
 
 export interface BasketItem {
   productId: string;
@@ -58,6 +58,7 @@ function loadStore(): string | null {
 const BasketContext = createContext<BasketContextType | null>(null);
 
 export function BasketProvider({ children }: { children: ReactNode }) {
+  const catalog = useCatalog();
   const [items, setItems] = useState<BasketItem[]>([]);
   const [selectedStore, setSelectedStoreState] = useState<string | null>(null);
   const [toasts, setToasts] = useState<Toast[]>([]);
@@ -113,10 +114,10 @@ export function BasketProvider({ children }: { children: ReactNode }) {
         }
         return [...prev, { productId, quantity: 1 }];
       });
-      const product = products.find((p) => p.id === productId);
+      const product = catalog.products.find((p) => p.id === productId);
       showToast(product ? `${product.name} added to basket` : "Added to basket");
     },
-    [showToast]
+    [showToast, catalog.products]
   );
 
   const removeItem = useCallback((productId: string) => {

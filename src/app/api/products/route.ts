@@ -1,6 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
-import { listProducts, getLowestPrice, getSavings, type Category } from "@/lib/store";
-import { supermarkets } from "@/data/supermarkets";
+import {
+  listProducts,
+  listSupermarkets,
+  getLowestPrice,
+  getSavings,
+  type Category,
+} from "@/lib/store";
 
 export async function GET(req: NextRequest) {
   try {
@@ -10,7 +15,10 @@ export async function GET(req: NextRequest) {
     const limit = parseInt(searchParams.get("limit") ?? "100", 10);
     const offset = parseInt(searchParams.get("offset") ?? "0", 10);
 
-    const { data, total } = listProducts({ category: category ?? undefined, search, limit, offset });
+    const [{ data, total }, supermarkets] = await Promise.all([
+      listProducts({ category: category ?? undefined, search, limit, offset }),
+      listSupermarkets(),
+    ]);
 
     const enriched = data.map((p) => {
       const lowest = getLowestPrice(p);

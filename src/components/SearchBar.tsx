@@ -36,7 +36,7 @@ export function SearchBar({
   return (
     <div className="relative">
       <svg
-        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999] pointer-events-none"
+        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999] dark:text-[#777] pointer-events-none"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -54,7 +54,7 @@ export function SearchBar({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-8 pr-16 py-2 border border-[#ccc] rounded text-sm bg-white focus:outline-none focus:border-[#4a90d9] focus:ring-1 focus:ring-[#4a90d9]"
+        className="w-full pl-8 pr-16 py-2 border border-[#ccc] dark:border-[#505050] rounded text-sm bg-white dark:bg-[#252525] dark:text-[#ececec] placeholder:text-[#999] dark:placeholder:text-[#888] focus:outline-none focus:border-[#4a90d9]"
       />
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
         {value && (
@@ -63,14 +63,14 @@ export function SearchBar({
               onChange("");
               inputRef.current?.focus();
             }}
-            className="w-5 h-5 rounded-full bg-[#ddd] hover:bg-[#ccc] text-[#666] flex items-center justify-center cursor-pointer text-xs leading-none"
+            className="w-5 h-5 rounded-full bg-[#ddd] dark:bg-[#464646] hover:bg-[#ccc] dark:hover:bg-[#5a5a5a] text-[#666] dark:text-[#ccc] flex items-center justify-center cursor-pointer text-xs leading-none"
             title="Clear search"
           >
             &times;
           </button>
         )}
         {!value && (
-          <kbd className="hidden sm:inline-block text-[10px] text-[#aaa] border border-[#ddd] rounded px-1.5 py-0.5 font-mono bg-[#f7f7f7]">
+          <kbd className="hidden sm:inline-block text-[10px] text-[#aaa] dark:text-[#777] border border-[#ddd] dark:border-[#505050] rounded px-1.5 py-0.5 font-mono bg-[#f7f7f7] dark:bg-[#2a2a2a]">
             /
           </kbd>
         )}
