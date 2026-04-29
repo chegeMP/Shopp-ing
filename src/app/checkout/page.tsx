@@ -8,6 +8,10 @@ import { ProductImage } from "@/components/ProductImage";
 import { useCatalog } from "@/components/CatalogContext";
 import Link from "next/link";
 import { saveReceiptToStorage, type ReceiptData } from "@/lib/receipt";
+import {
+  computeOrderMoneySplit,
+  checkoutRequiresOnlinePayment,
+} from "@/lib/order-split";
 
 function CheckoutContent() {
   const { products, supermarkets } = useCatalog();
@@ -53,6 +57,13 @@ function CheckoutContent() {
       return sum + (pp ? pp.price * item.quantity : 0);
     }, 0);
   }, [basketProducts, store]);
+
+  const split = useMemo(
+    () => computeOrderMoneySplit(orderTotal),
+    [orderTotal],
+  );
+
+  const requireOnlinePayment = checkoutRequiresOnlinePayment();
 
   const paymentLabel =
     form.payment === "mpesa"
@@ -133,8 +144,27 @@ function CheckoutContent() {
             <span>{completedReceipt.paymentMethod}</span>
           </div>
           <div className="flex justify-between border-t border-[#ddd] dark:border-[#555] pt-1.5 mt-1.5 font-bold text-[#222] dark:text-[#eee]">
-            <span>Total</span>
-            <span>KSh {completedReceipt.grandTotal.toLocaleString()}</span>
+            <span>You pay</span>
+            <span className="tabular-nums">
+              KSh {completedReceipt.grandTotal.toLocaleString()}
+            </span>
+          </div>
+          <div className="mt-3 pt-3 border-t border-dashed border-[#ddd] dark:border-[#555] text-left text-xs text-[#555] dark:text-[#aaa] space-y-1">
+            <p className="font-semibold text-[#444] dark:text-[#ccc] uppercase tracking-wide">
+              Settlement (from your payment)
+            </p>
+            <div className="flex justify-between gap-2">
+              <span>PriceSnap fee</span>
+              <span className="tabular-nums">
+                KSh {completedReceipt.platformFeeKes.toLocaleString()}
+              </span>
+            </div>
+            <div className="flex justify-between gap-2">
+              <span>{store.name} receives</span>
+              <span className="tabular-nums">
+                KSh {completedReceipt.supermarketPayoutKes.toLocaleString()}
+              </span>
+            </div>
           </div>
         </div>
         <div className="flex justify-center mb-5">
@@ -176,7 +206,7 @@ function CheckoutContent() {
     });
 
     try {
-      if (form.payment === "card") {
+      if (requireOnlinePayment && form.payment === "card") {
         const mail = form.email.trim();
         if (!mail.includes("@")) {
           setSubmitError("Email is required for card payment.");
@@ -191,6 +221,8 @@ function CheckoutContent() {
           deliveryAddress: form.address.trim() || undefined,
           basketProducts: lineItems,
           orderTotal,
+          platformFeeKes: split.platformFeeKes,
+          supermarketPayoutKes: split.supermarketPayoutKes,
         };
         sessionStorage.setItem("pricesnap_card_checkout", JSON.stringify(draft));
 
@@ -206,6 +238,9 @@ function CheckoutContent() {
             metadata: {
               orderNo,
               storeId: store!.id,
+              platformFeeKes: split.platformFeeKes,
+              supermarketPayoutKes: split.supermarketPayoutKes,
+              customerTotalKes: orderTotal,
             },
           }),
         });
@@ -217,7 +252,7 @@ function CheckoutContent() {
         return;
       }
 
-      if (form.payment === "mpesa") {
+      if (requireOnlinePayment && form.payment === "mpesa") {
         const phone = form.phone.trim();
         if (!phone) {
           setSubmitError("Phone number is required for mobile money.");
@@ -255,6 +290,8 @@ function CheckoutContent() {
             total: orderTotal,
             paymentMethod: paymentLabel,
             deliveryAddress: form.address.trim() || undefined,
+            platformFeeKes: split.platformFeeKes,
+            supermarketPayoutKes: split.supermarketPayoutKes,
           }),
         }).catch(() => {});
       }
@@ -272,6 +309,8 @@ function CheckoutContent() {
         paymentMethod: paymentLabel,
         items: lineItems,
         grandTotal: orderTotal,
+        platformFeeKes: split.platformFeeKes,
+        supermarketPayoutKes: split.supermarketPayoutKes,
       };
       saveReceiptToStorage(receipt);
       setCompletedReceipt(receipt);
@@ -311,6 +350,14 @@ function CheckoutContent() {
           <strong className="text-[#222]">{store.name}</strong>
         </span>
       </p>
+      {!requireOnlinePayment ? (
+        <p className="text-sm text-[#1a5dab] dark:text-[#90caf9] bg-[#e8f0fe] dark:bg-[#1e3550]/50 border border-[#b8d4f0] dark:border-[#3d5a80] rounded-lg px-3 py-2.5 mb-6">
+          <strong>No online paywall.</strong> Your order is placed as soon as you
+          submit — you are not charged in the app yet. The amounts below show how
+          each payment would be split between PriceSnap and the store when card or
+          mobile money is turned on.
+        </p>
+      ) : null}
 
       <form onSubmit={handleSubmit}>
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6">
@@ -410,17 +457,29 @@ function CheckoutContent() {
             {/* Payment */}
             <fieldset className="border border-[#ddd] rounded">
               <legend className="px-2 ml-2 text-xs font-semibold text-[#888] uppercase tracking-wide">
-                Payment method
+                Payment preference
               </legend>
               <div className="p-4 space-y-2">
                 {[
                   {
                     id: "mpesa",
                     label: "Mobile money",
-                    desc: "STK-style prompt (Airtel Money API or mock sandbox)",
+                    desc: requireOnlinePayment
+                      ? "STK-style prompt when enabled"
+                      : "Preferred — charged later when online pay is on",
                   },
-                  { id: "card", label: "Card", desc: "Visa / Mastercard" },
-                  { id: "cash", label: "Cash on delivery", desc: "Pay when you receive" },
+                  {
+                    id: "card",
+                    label: "Card",
+                    desc: requireOnlinePayment
+                      ? "Paystack (Visa / Mastercard)"
+                      : "Preferred — charged later when online pay is on",
+                  },
+                  {
+                    id: "cash",
+                    label: "Cash on delivery",
+                    desc: "Pay when you receive your order",
+                  },
                 ].map((method) => (
                   <label
                     key={method.id}
@@ -493,12 +552,39 @@ function CheckoutContent() {
                   );
                 })}
               </div>
-              <div className="px-3 py-3 border-t border-[#ddd] bg-[#f7f7f7]">
+              <div className="px-3 py-3 border-t border-[#ddd] bg-[#f7f7f7] space-y-2">
                 <div className="flex justify-between font-bold text-[#222] text-sm">
-                  <span>Total</span>
+                  <span>You pay</span>
                   <span className="tabular-nums">
                     KSh {orderTotal.toLocaleString()}
                   </span>
+                </div>
+                <div className="text-[11px] text-[#666] space-y-1 pt-2 border-t border-dashed border-[#ddd]">
+                  <p className="font-semibold text-[#555] uppercase tracking-wide">
+                    Settlement preview
+                  </p>
+                  <div className="flex justify-between gap-2">
+                    <span>
+                      PriceSnap fee
+                      <span className="text-[#999] font-normal">
+                        {" "}
+                        ({split.feePercent}%
+                        {split.feeFixedKes > 0
+                          ? ` + KSh ${split.feeFixedKes}`
+                          : ""}
+                        )
+                      </span>
+                    </span>
+                    <span className="tabular-nums shrink-0">
+                      KSh {split.platformFeeKes.toLocaleString()}
+                    </span>
+                  </div>
+                  <div className="flex justify-between gap-2 font-medium text-[#2e7d32]">
+                    <span>{store.name} receives</span>
+                    <span className="tabular-nums shrink-0">
+                      KSh {split.supermarketPayoutKes.toLocaleString()}
+                    </span>
+                  </div>
                 </div>
               </div>
               <div className="p-3">
@@ -516,6 +602,9 @@ function CheckoutContent() {
                     : `Place order — KSh ${orderTotal.toLocaleString()}`}
                 </button>
                 <p className="text-[11px] text-[#999] text-center mt-2">
+                  {requireOnlinePayment
+                    ? "Card or mobile money will prompt before the order completes."
+                    : "Submission does not charge your card or phone yet."}{" "}
                   By placing this order you agree to our terms of service.
                 </p>
               </div>

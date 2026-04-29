@@ -30,7 +30,10 @@ export function NewsletterSignup() {
   }
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-2 w-full max-w-xs">
+    <form
+      onSubmit={onSubmit}
+      className="flex flex-col gap-2 w-full max-w-xs rounded-2xl border border-[#e2e4e8] dark:border-[#35383d] bg-white/80 dark:bg-[#232326]/80 backdrop-blur-sm p-4 shadow-sm"
+    >
       <p className="text-[13px] font-semibold text-[#444] dark:text-[#ccc] mb-0.5">
         Price alerts &amp; deals
       </p>
@@ -51,12 +54,12 @@ export function NewsletterSignup() {
             setEmail(e.target.value);
             if (status !== "idle") setStatus("idle");
           }}
-          className="flex-1 min-w-0 px-2 py-1.5 text-[13px] border border-[#ccc] dark:border-[#444] rounded bg-white dark:bg-[#262626] dark:text-[#eee] placeholder:text-[#999] dark:placeholder:text-[#666]"
+          className="flex-1 min-w-0 px-3 py-2 text-[13px] border border-[#d8dce2] dark:border-[#444] rounded-xl bg-white dark:bg-[#262626] dark:text-[#eee] placeholder:text-[#999] dark:placeholder:text-[#666] shadow-sm focus:outline-none focus:border-[#1a5dab] dark:focus:border-[#5b9bd5]"
         />
         <button
           type="submit"
           disabled={status === "loading"}
-          className="shrink-0 px-3 py-1.5 text-[12px] font-medium rounded bg-[#1a5dab] text-white hover:bg-[#155299] disabled:opacity-60"
+          className="shrink-0 px-4 py-2 text-[12px] font-semibold rounded-xl bg-[#1a5dab] text-white hover:bg-[#155299] disabled:opacity-60 shadow-md shadow-[#1a5dab]/25 transition-all active:scale-[0.98]"
         >
           {status === "loading" ? "…" : "Join"}
         </button>

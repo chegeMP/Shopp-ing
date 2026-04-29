@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useBasket } from "@/components/BasketContext";
 import { saveReceiptToStorage } from "@/lib/receipt";
+import { computeOrderMoneySplit } from "@/lib/order-split";
 
 const DRAFT_KEY = "pricesnap_card_checkout";
 
@@ -22,6 +23,8 @@ type OrderDraft = {
     total: number;
   }[];
   orderTotal: number;
+  platformFeeKes?: number;
+  supermarketPayoutKes?: number;
 };
 
 function ReturnContent() {
@@ -74,6 +77,13 @@ function ReturnContent() {
         const draft: OrderDraft | null = raw ? JSON.parse(raw) : null;
 
         if (draft?.email?.includes("@")) {
+          const s =
+            draft.platformFeeKes != null && draft.supermarketPayoutKes != null
+              ? {
+                  platformFeeKes: draft.platformFeeKes,
+                  supermarketPayoutKes: draft.supermarketPayoutKes,
+                }
+              : computeOrderMoneySplit(draft.orderTotal);
           await fetch("/api/email/order-confirmation", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -86,11 +96,20 @@ function ReturnContent() {
               total: draft.orderTotal,
               paymentMethod: "Card (Paystack)",
               deliveryAddress: draft.deliveryAddress || undefined,
+              platformFeeKes: s.platformFeeKes,
+              supermarketPayoutKes: s.supermarketPayoutKes,
             }),
           }).catch(() => {});
         }
 
         if (draft) {
+          const s =
+            draft.platformFeeKes != null && draft.supermarketPayoutKes != null
+              ? {
+                  platformFeeKes: draft.platformFeeKes,
+                  supermarketPayoutKes: draft.supermarketPayoutKes,
+                }
+              : computeOrderMoneySplit(draft.orderTotal);
           saveReceiptToStorage({
             orderNo: draft.orderNo,
             placedAt: new Date().toISOString(),
@@ -104,6 +123,8 @@ function ReturnContent() {
             paymentMethod: "Card (Paystack)",
             items: draft.basketProducts,
             grandTotal: draft.orderTotal,
+            platformFeeKes: s.platformFeeKes,
+            supermarketPayoutKes: s.supermarketPayoutKes,
           });
         }
 

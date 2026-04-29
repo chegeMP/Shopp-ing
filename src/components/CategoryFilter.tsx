@@ -27,7 +27,7 @@ export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
       onChange={(e) =>
         onSelect(e.target.value ? (e.target.value as Category) : null)
       }
-      className="px-3 py-2 border border-[#ccc] dark:border-[#505050] rounded text-sm bg-white dark:bg-[#252525] dark:text-[#ececec] cursor-pointer focus:outline-none focus:border-[#4a90d9]"
+      className="w-full px-3.5 py-2.5 border border-[#d8dce2] dark:border-[#505860] rounded-xl text-sm bg-white dark:bg-[#252525] dark:text-[#ececec] shadow-sm cursor-pointer focus:outline-none focus:border-[#1a5dab] dark:focus:border-[#5b9bd5] focus:ring-2 focus:ring-[#1a5dab]/10 dark:focus:ring-[#5b9bd5]/15 transition-shadow"
     >
       <option value="">All categories ({products.length})</option>
       {categories.map((cat) => (

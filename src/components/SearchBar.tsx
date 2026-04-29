@@ -34,9 +34,9 @@ export function SearchBar({
   }, []);
 
   return (
-    <div className="relative">
+    <div className="relative rounded-xl border border-[#d8dce2] dark:border-[#3d4249] bg-white dark:bg-[#252525] shadow-sm hover:shadow-md hover:border-[#c5cad3] dark:hover:border-[#505860] transition-all duration-200 focus-within:border-[#1a5dab] dark:focus-within:border-[#5b9bd5] focus-within:shadow-md focus-within:ring-2 focus-within:ring-[#1a5dab]/12 dark:focus-within:ring-[#5b9bd5]/15">
       <svg
-        className="absolute left-2.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#999] dark:text-[#777] pointer-events-none"
+        className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9aa3af] dark:text-[#7d8694] pointer-events-none"
         fill="none"
         viewBox="0 0 24 24"
         stroke="currentColor"
@@ -54,23 +54,24 @@ export function SearchBar({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full pl-8 pr-16 py-2 border border-[#ccc] dark:border-[#505050] rounded text-sm bg-white dark:bg-[#252525] dark:text-[#ececec] placeholder:text-[#999] dark:placeholder:text-[#888] focus:outline-none focus:border-[#4a90d9]"
+        className="w-full pl-9 pr-[4.25rem] py-2.5 text-sm bg-transparent dark:text-[#ececec] placeholder:text-[#9aa3af] dark:placeholder:text-[#888] focus:outline-none rounded-xl border-0"
       />
       <div className="absolute right-2 top-1/2 -translate-y-1/2 flex items-center gap-1">
         {value && (
           <button
+            type="button"
             onClick={() => {
               onChange("");
               inputRef.current?.focus();
             }}
-            className="w-5 h-5 rounded-full bg-[#ddd] dark:bg-[#464646] hover:bg-[#ccc] dark:hover:bg-[#5a5a5a] text-[#666] dark:text-[#ccc] flex items-center justify-center cursor-pointer text-xs leading-none"
+            className="w-6 h-6 rounded-full bg-[#e8eaee] dark:bg-[#3a3f46] hover:bg-[#dde0e6] dark:hover:bg-[#4a5058] text-[#5c6370] dark:text-[#d0d4dc] flex items-center justify-center cursor-pointer text-sm leading-none transition-colors"
             title="Clear search"
           >
             &times;
           </button>
         )}
         {!value && (
-          <kbd className="hidden sm:inline-block text-[10px] text-[#aaa] dark:text-[#777] border border-[#ddd] dark:border-[#505050] rounded px-1.5 py-0.5 font-mono bg-[#f7f7f7] dark:bg-[#2a2a2a]">
+          <kbd className="hidden sm:inline-block text-[10px] text-[#8b939e] dark:text-[#8a9099] border border-[#d8dce2] dark:border-[#505860] rounded-md px-1.5 py-0.5 font-mono bg-[#f4f5f7] dark:bg-[#2e3238] shadow-sm">
             /
           </kbd>
         )}

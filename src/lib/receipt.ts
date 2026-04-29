@@ -19,7 +19,12 @@ export interface ReceiptData {
   notes?: string;
   paymentMethod: string;
   items: ReceiptLineItem[];
+  /** What the customer pays (basket total). */
   grandTotal: number;
+  /** PriceSnap fee retained from `grandTotal` (KSh). */
+  platformFeeKes: number;
+  /** Amount attributed to the supermarket after the platform fee (KSh). */
+  supermarketPayoutKes: number;
 }
 
 export const RECEIPT_STORAGE_KEY = "pricesnap_last_receipt";
@@ -40,6 +45,16 @@ export function loadReceiptFromStorage(): ReceiptData | null {
       typeof parsed.grandTotal !== "number"
     )
       return null;
+    if (typeof parsed.platformFeeKes !== "number") {
+      parsed.platformFeeKes = 0;
+      parsed.supermarketPayoutKes = parsed.grandTotal;
+    }
+    if (typeof parsed.supermarketPayoutKes !== "number") {
+      parsed.supermarketPayoutKes = Math.max(
+        0,
+        parsed.grandTotal - (parsed.platformFeeKes ?? 0),
+      );
+    }
     return parsed;
   } catch {
     return null;
@@ -134,7 +149,12 @@ export function buildStandaloneReceiptHtml(
       </thead>
       <tbody>${rows}</tbody>
     </table>
-    <p class="total">Total: KSh ${data.grandTotal.toLocaleString()}</p>
+    <p class="total">You pay: KSh ${data.grandTotal.toLocaleString()}</p>
+    <div style="margin-top:12px;padding:12px;background:#f7f9fc;border-radius:8px;border:1px solid #e3e8ef;font-size:13px;color:#555">
+      <p style="margin:0 0 6px;font-weight:600;color:#333">Settlement (from your payment)</p>
+      <p style="margin:4px 0"><strong>${escapeHtml(appName)}</strong> fee: KSh ${data.platformFeeKes.toLocaleString()}</p>
+      <p style="margin:4px 0"><strong>${escapeHtml(data.storeName)}</strong> receives: KSh ${data.supermarketPayoutKes.toLocaleString()}</p>
+    </div>
     <p style="margin-top:20px;font-size:12px;color:#888;">Thank you for shopping with ${escapeHtml(appName)}.</p>
   </div>
 </body>

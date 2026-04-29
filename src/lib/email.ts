@@ -1,6 +1,14 @@
 import Mailgun from "mailgun.js";
 import FormData from "form-data";
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 const mailgun = new Mailgun(FormData);
 
 function getClient() {
@@ -35,6 +43,10 @@ export interface OrderEmailData {
   total: number;
   paymentMethod: string;
   deliveryAddress?: string;
+  /** PriceSnap fee (KSh), if applicable. */
+  platformFeeKes?: number;
+  /** Supermarket remittance (KSh), if applicable. */
+  supermarketPayoutKes?: number;
 }
 
 export interface SubscriptionEmailData {
@@ -118,8 +130,20 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
           </thead>
           <tbody>${itemRows}</tbody>
           <tfoot>
+            ${
+              data.platformFeeKes != null && data.supermarketPayoutKes != null
+                ? `<tr>
+              <td colspan="4" style="padding:10px 12px 0;font-size:12px;color:#666;background:#f9fbfd;border-top:1px solid #e8e8e8">
+                <strong>Settlement</strong> (from your payment): ${escapeHtml(
+                  process.env.NEXT_PUBLIC_APP_NAME || "PriceSnap",
+                )} fee <strong>KSh ${data.platformFeeKes.toLocaleString()}</strong>
+                · ${escapeHtml(data.storeName)} receives <strong>KSh ${data.supermarketPayoutKes.toLocaleString()}</strong>
+              </td>
+            </tr>`
+                : ""
+            }
             <tr>
-              <td colspan="3" style="padding:12px;text-align:right;font-size:15px;font-weight:700;color:#222;border-top:2px solid #ddd">Total</td>
+              <td colspan="3" style="padding:12px;text-align:right;font-size:15px;font-weight:700;color:#222;border-top:2px solid #ddd">You pay</td>
               <td style="padding:12px;text-align:right;font-size:15px;font-weight:700;color:#2e7d32;border-top:2px solid #ddd">KSh ${data.total.toLocaleString()}</td>
             </tr>
           </tfoot>

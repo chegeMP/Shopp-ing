@@ -4,7 +4,18 @@ import { sendOrderConfirmation, type OrderEmailData } from "@/lib/email";
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { to, customerName, orderNo, storeName, items, total, paymentMethod, deliveryAddress } = body;
+    const {
+      to,
+      customerName,
+      orderNo,
+      storeName,
+      items,
+      total,
+      paymentMethod,
+      deliveryAddress,
+      platformFeeKes,
+      supermarketPayoutKes,
+    } = body;
 
     if (!to || !customerName || !orderNo || !storeName || !items?.length || !total) {
       return NextResponse.json(
@@ -22,6 +33,12 @@ export async function POST(request: NextRequest) {
       total,
       paymentMethod: paymentMethod || "Cash on delivery",
       deliveryAddress,
+      platformFeeKes:
+        typeof platformFeeKes === "number" ? platformFeeKes : undefined,
+      supermarketPayoutKes:
+        typeof supermarketPayoutKes === "number"
+          ? supermarketPayoutKes
+          : undefined,
     };
 
     const result = await sendOrderConfirmation(data);

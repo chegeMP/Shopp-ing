@@ -98,10 +98,28 @@ export function OrderReceipt({ data }: { data: ReceiptData }) {
       </table>
 
       <div className="flex justify-between items-baseline mt-4 pt-3 border-t-2 border-[#333] dark:border-[#ccc]">
-        <span className="text-sm font-semibold">Total</span>
+        <span className="text-sm font-semibold">You pay</span>
         <span className="text-lg font-bold tabular-nums">
           KSh {data.grandTotal.toLocaleString()}
         </span>
+      </div>
+
+      <div className="mt-4 rounded-lg border border-[#e3e8ef] dark:border-[#3d4654] bg-[#f7f9fc] dark:bg-[#252a32] px-3 py-3 text-sm">
+        <p className="text-xs font-semibold text-[#555] dark:text-[#bbb] uppercase tracking-wide mb-2">
+          Settlement (from your payment)
+        </p>
+        <div className="flex justify-between gap-2 text-[#444] dark:text-[#ccc]">
+          <span>{appName} fee</span>
+          <span className="tabular-nums font-medium">
+            KSh {data.platformFeeKes.toLocaleString()}
+          </span>
+        </div>
+        <div className="flex justify-between gap-2 text-[#444] dark:text-[#ccc] mt-1">
+          <span>{data.storeName} receives</span>
+          <span className="tabular-nums font-medium">
+            KSh {data.supermarketPayoutKes.toLocaleString()}
+          </span>
+        </div>
       </div>
 
       <p className="text-[11px] text-[#999] dark:text-[#777] mt-6 mb-0 text-center">

@@ -233,8 +233,9 @@ export function Msaidizi() {
     <>
       {/* Toggle button */}
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="fixed bottom-5 right-5 z-50 w-12 h-12 bg-[#1a5dab] text-white rounded-full shadow-lg flex items-center justify-center cursor-pointer hover:bg-[#155299] transition-colors"
+        className="fixed bottom-6 right-5 z-50 w-14 h-14 bg-gradient-to-br from-[#1a5dab] to-[#124a8f] text-white rounded-full shadow-lg shadow-[#1a5dab]/35 flex items-center justify-center cursor-pointer hover:brightness-110 active:scale-95 transition-all duration-200 ring-4 ring-white/30 dark:ring-[#121212]/80"
         title="Chat with Msaidizi"
       >
         {open ? (
@@ -250,16 +251,21 @@ export function Msaidizi() {
 
       {/* Chat panel */}
       {open && (
-        <div className="fixed z-50 bg-white border border-[#ccc] rounded shadow-xl flex flex-col bottom-20 right-3 left-3 sm:left-auto sm:right-5 sm:w-[360px] max-h-[70vh] sm:max-h-[500px]">
+        <div className="fixed z-50 bg-white dark:bg-[#1e1f24] border border-[#e2e4e8] dark:border-[#35383d] rounded-2xl shadow-2xl shadow-black/15 dark:shadow-black/50 flex flex-col bottom-24 right-3 left-3 sm:left-auto sm:right-5 sm:w-[380px] max-h-[70vh] sm:max-h-[500px] overflow-hidden">
           {/* Header */}
-          <div className="px-4 py-3 border-b border-[#ddd] bg-[#f7f7f7] flex items-center justify-between shrink-0">
+          <div className="px-4 py-3.5 border-b border-[#eef0f3] dark:border-[#2e3238] bg-[#fafbfc] dark:bg-[#252628] flex items-center justify-between shrink-0">
             <div>
-              <p className="text-sm font-bold text-[#222]">Msaidizi</p>
-              <p className="text-[11px] text-[#888]">Shopping assistant</p>
+              <p className="text-sm font-bold text-[#1a1d21] dark:text-[#f4f4f5]">
+                Msaidizi
+              </p>
+              <p className="text-[11px] text-[#8b939e] dark:text-[#9aa3af]">
+                Shopping assistant
+              </p>
             </div>
             <button
+              type="button"
               onClick={() => setOpen(false)}
-              className="text-[#999] hover:text-[#333] cursor-pointer"
+              className="p-1.5 rounded-lg text-[#8b939e] hover:text-[#333] dark:hover:text-[#ececec] hover:bg-[#eef0f3] dark:hover:bg-[#363a42] cursor-pointer transition-colors"
             >
               <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
@@ -275,10 +281,10 @@ export function Msaidizi() {
                 className={`flex ${msg.from === "user" ? "justify-end" : "justify-start"}`}
               >
                 <div
-                  className={`max-w-[85%] text-sm px-3 py-2 rounded whitespace-pre-wrap leading-relaxed ${
+                  className={`max-w-[85%] text-sm px-3.5 py-2.5 rounded-2xl whitespace-pre-wrap leading-relaxed shadow-sm ${
                     msg.from === "user"
-                      ? "bg-[#1a5dab] text-white"
-                      : "bg-[#f0f0f0] text-[#333]"
+                      ? "bg-[#1a5dab] text-white rounded-br-md"
+                      : "bg-[#f0f2f6] dark:bg-[#32353d] text-[#1a1d21] dark:text-[#ececec] rounded-bl-md"
                   }`}
                 >
                   {msg.text}
@@ -289,7 +295,7 @@ export function Msaidizi() {
           </div>
 
           {/* Input */}
-          <div className="px-3 py-2.5 border-t border-[#ddd] bg-[#f7f7f7] shrink-0">
+          <div className="px-3 py-3 border-t border-[#eef0f3] dark:border-[#2e3238] bg-[#fafbfc] dark:bg-[#252628] shrink-0">
             <form
               onSubmit={(e) => {
                 e.preventDefault();
@@ -303,11 +309,11 @@ export function Msaidizi() {
                 value={input}
                 onChange={(e) => setInput(e.target.value)}
                 placeholder="Ask Msaidizi anything..."
-                className="flex-1 px-3 py-2 border border-[#ccc] rounded text-sm bg-white focus:outline-none focus:border-[#4a90d9]"
+                className="flex-1 px-3 py-2.5 border border-[#d8dce2] dark:border-[#454a52] rounded-xl text-sm bg-white dark:bg-[#1e1f24] dark:text-[#ececec] placeholder:text-[#9aa3af] focus:outline-none focus:border-[#1a5dab] dark:focus:border-[#5b9bd5] focus:ring-2 focus:ring-[#1a5dab]/10 transition-shadow"
               />
               <button
                 type="submit"
-                className="px-3 py-2 bg-[#1a5dab] text-white text-sm font-medium rounded hover:bg-[#155299] cursor-pointer transition-colors"
+                className="px-4 py-2.5 bg-[#1a5dab] text-white text-sm font-semibold rounded-xl hover:bg-[#155299] cursor-pointer transition-all shadow-md shadow-[#1a5dab]/20 active:scale-[0.98]"
               >
                 Send
               </button>

@@ -68,12 +68,12 @@ export default async function RootLayout({
             <BasketProvider>
               <Header />
               <ErrorBoundary>
-                <main className="flex-1 bg-[#fafafa] dark:bg-[#121212] transition-colors">
+                <main className="flex-1 min-h-[70vh] bg-gradient-to-b from-[#eef3f9] via-[#f7f8fa] to-[#fafafa] dark:from-[#161d28] dark:via-[#141414] dark:to-[#121212] transition-colors">
                   {children}
                 </main>
               </ErrorBoundary>
               <Msaidizi />
-              <footer className="border-t border-[#ddd] dark:border-[#2a2a2a] bg-[#f5f5f5] dark:bg-[#1a1a1a] mt-10">
+              <footer className="border-t border-[#e2e4e8] dark:border-[#2a2a2a] bg-[#f1f3f6]/90 dark:bg-[#18181b]/95 backdrop-blur-sm mt-12 shadow-[0_-1px_0_rgba(0,0,0,0.04)] dark:shadow-none">
                 <div className="max-w-[1100px] mx-auto px-4 py-6 flex flex-col lg:flex-row justify-between gap-6 lg:items-start">
                   <div className="text-xs text-[#888] dark:text-[#9a9a9a] max-w-xl space-y-1">
                     <p>
