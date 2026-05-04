@@ -1,7 +1,7 @@
 /**
- * How each order amount is split between PriceSnap (platform fee) and the supermarket.
- * The customer pays `customerTotalKes` only — the fee is deducted from that total internally
- * (not an extra line item for the shopper).
+ * How each order amount is split between Ma-bei (platform fee) and the supermarket.
+ * ("Ma-bei" means many prices.) The customer pays `customerTotalKes` only — the fee is
+ * deducted from that total internally (not an extra line item for the shopper).
  *
  * Configure via NEXT_PUBLIC_* so checkout UI and server agree without an extra round-trip.
  */
@@ -9,7 +9,7 @@
 export type OrderMoneySplit = {
   /** What the customer pays (same as basket total at checkout). */
   customerTotalKes: number;
-  /** PriceSnap commission (KSh, integer). */
+  /** Ma-bei (platform) commission (KSh, integer). */
   platformFeeKes: number;
   /** Remittance due to the supermarket (KSh, integer). */
   supermarketPayoutKes: number;

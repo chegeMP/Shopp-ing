@@ -10,6 +10,12 @@ import {
   type ReactNode,
 } from "react";
 import { useCatalog } from "@/components/CatalogContext";
+import {
+  STORAGE,
+  STORAGE_LEGACY_KEYS,
+  readLocalStorageWithMigration,
+  removeLocalStorageKeys,
+} from "@/lib/branding";
 
 export interface BasketItem {
   productId: string;
@@ -33,13 +39,16 @@ interface BasketContextType {
   getQuantity: (productId: string) => number;
 }
 
-const STORAGE_KEY = "pricesnap_basket";
-const STORE_KEY = "pricesnap_store";
+const STORAGE_KEY = STORAGE.basket;
+const STORE_KEY = STORAGE.store;
 
 function loadBasket(): BasketItem[] {
   if (typeof window === "undefined") return [];
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
+    const raw = readLocalStorageWithMigration(
+      STORAGE_KEY,
+      STORAGE_LEGACY_KEYS.basket,
+    );
     if (!raw) return [];
     const parsed = JSON.parse(raw);
     if (Array.isArray(parsed)) return parsed;
@@ -48,11 +57,7 @@ function loadBasket(): BasketItem[] {
 }
 
 function loadStore(): string | null {
-  if (typeof window === "undefined") return null;
-  try {
-    return localStorage.getItem(STORE_KEY);
-  } catch {}
-  return null;
+  return readLocalStorageWithMigration(STORE_KEY, STORAGE_LEGACY_KEYS.store);
 }
 
 const BasketContext = createContext<BasketContextType | null>(null);
@@ -75,6 +80,7 @@ export function BasketProvider({ children }: { children: ReactNode }) {
     if (!hydrated) return;
     try {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
+      removeLocalStorageKeys([...STORAGE_LEGACY_KEYS.basket]);
     } catch {}
   }, [items, hydrated]);
 
@@ -83,8 +89,12 @@ export function BasketProvider({ children }: { children: ReactNode }) {
     try {
       if (selectedStore) {
         localStorage.setItem(STORE_KEY, selectedStore);
+        removeLocalStorageKeys([...STORAGE_LEGACY_KEYS.store]);
       } else {
-        localStorage.removeItem(STORE_KEY);
+        removeLocalStorageKeys([
+          STORE_KEY,
+          ...STORAGE_LEGACY_KEYS.store,
+        ]);
       }
     } catch {}
   }, [selectedStore, hydrated]);

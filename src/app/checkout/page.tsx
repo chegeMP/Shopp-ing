@@ -12,6 +12,7 @@ import {
   computeOrderMoneySplit,
   checkoutRequiresOnlinePayment,
 } from "@/lib/order-split";
+import { APP_DISPLAY_NAME_DEFAULT, STORAGE } from "@/lib/branding";
 
 function CheckoutContent() {
   const { products, supermarkets } = useCatalog();
@@ -19,6 +20,11 @@ function CheckoutContent() {
   const storeId = searchParams.get("store");
   const store = supermarkets.find((s) => s.id === storeId);
   const { items, clearBasket } = useBasket();
+
+  const appBrand =
+    typeof process !== "undefined"
+      ? process.env.NEXT_PUBLIC_APP_NAME ?? APP_DISPLAY_NAME_DEFAULT
+      : APP_DISPLAY_NAME_DEFAULT;
 
   const [form, setForm] = useState({
     name: "",
@@ -30,7 +36,7 @@ function CheckoutContent() {
   });
   const [submitted, setSubmitted] = useState(false);
   const [orderNo] = useState(
-    () => `PS-${Date.now().toString(36).toUpperCase()}`
+    () => `MB-${Date.now().toString(36).toUpperCase()}`
   );
 
   const [submitting, setSubmitting] = useState(false);
@@ -154,7 +160,7 @@ function CheckoutContent() {
               Settlement (from your payment)
             </p>
             <div className="flex justify-between gap-2">
-              <span>PriceSnap fee</span>
+              <span>{appBrand} fee</span>
               <span className="tabular-nums">
                 KSh {completedReceipt.platformFeeKes.toLocaleString()}
               </span>
@@ -224,7 +230,7 @@ function CheckoutContent() {
           platformFeeKes: split.platformFeeKes,
           supermarketPayoutKes: split.supermarketPayoutKes,
         };
-        sessionStorage.setItem("pricesnap_card_checkout", JSON.stringify(draft));
+        sessionStorage.setItem(STORAGE.cardCheckoutDraft, JSON.stringify(draft));
 
         const appUrl =
           typeof window !== "undefined" ? window.location.origin : "";
@@ -354,7 +360,7 @@ function CheckoutContent() {
         <p className="text-sm text-[#1a5dab] dark:text-[#90caf9] bg-[#e8f0fe] dark:bg-[#1e3550]/50 border border-[#b8d4f0] dark:border-[#3d5a80] rounded-lg px-3 py-2.5 mb-6">
           <strong>No online paywall.</strong> Your order is placed as soon as you
           submit — you are not charged in the app yet. The amounts below show how
-          each payment would be split between PriceSnap and the store when card or
+          each payment would be split between {appBrand} and the store when card or
           mobile money is turned on.
         </p>
       ) : null}
@@ -565,7 +571,7 @@ function CheckoutContent() {
                   </p>
                   <div className="flex justify-between gap-2">
                     <span>
-                      PriceSnap fee
+                      {appBrand} fee
                       <span className="text-[#999] font-normal">
                         {" "}
                         ({split.feePercent}%

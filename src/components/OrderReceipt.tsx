@@ -2,10 +2,12 @@
 
 import type { ReceiptData } from "@/lib/receipt";
 
+import { APP_DISPLAY_NAME_DEFAULT } from "@/lib/branding";
+
 const appName =
   typeof process !== "undefined"
-    ? process.env.NEXT_PUBLIC_APP_NAME ?? "PriceSnap"
-    : "PriceSnap";
+    ? process.env.NEXT_PUBLIC_APP_NAME ?? APP_DISPLAY_NAME_DEFAULT
+    : APP_DISPLAY_NAME_DEFAULT;
 
 export function OrderReceipt({ data }: { data: ReceiptData }) {
   const placed = new Date(data.placedAt);

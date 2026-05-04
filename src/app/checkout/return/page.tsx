@@ -6,8 +6,12 @@ import { useSearchParams } from "next/navigation";
 import { useBasket } from "@/components/BasketContext";
 import { saveReceiptToStorage } from "@/lib/receipt";
 import { computeOrderMoneySplit } from "@/lib/order-split";
-
-const DRAFT_KEY = "pricesnap_card_checkout";
+import {
+  STORAGE,
+  STORAGE_LEGACY_KEYS,
+  readSessionStorageWithMigration,
+  removeSessionStorageKeys,
+} from "@/lib/branding";
 
 type OrderDraft = {
   orderNo: string;
@@ -71,7 +75,10 @@ function ReturnContent() {
 
         const raw =
           typeof window !== "undefined"
-            ? sessionStorage.getItem(DRAFT_KEY)
+            ? readSessionStorageWithMigration(
+                STORAGE.cardCheckoutDraft,
+                STORAGE_LEGACY_KEYS.cardCheckoutDraft,
+              )
             : null;
 
         const draft: OrderDraft | null = raw ? JSON.parse(raw) : null;
@@ -128,7 +135,10 @@ function ReturnContent() {
           });
         }
 
-        sessionStorage.removeItem(DRAFT_KEY);
+        removeSessionStorageKeys([
+          STORAGE.cardCheckoutDraft,
+          ...STORAGE_LEGACY_KEYS.cardCheckoutDraft,
+        ]);
         clearBasket();
         setState("ok");
       } catch (e) {

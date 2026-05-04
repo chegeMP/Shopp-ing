@@ -4,11 +4,16 @@ import Link from "next/link";
 import { useBasket } from "./BasketContext";
 import { useTheme } from "./ThemeProvider";
 import { usePathname } from "next/navigation";
+import { APP_DISPLAY_NAME_DEFAULT } from "@/lib/branding";
 
 export function Header() {
   const { itemCount } = useBasket();
   const { theme, toggle } = useTheme();
   const path = usePathname();
+  const brand =
+    typeof process !== "undefined"
+      ? process.env.NEXT_PUBLIC_APP_NAME ?? APP_DISPLAY_NAME_DEFAULT
+      : APP_DISPLAY_NAME_DEFAULT;
 
   const isActive = (href: string) => path === href;
 
@@ -37,7 +42,7 @@ export function Header() {
               </svg>
             </span>
             <span className="group-hover:text-[#1a5dab] dark:group-hover:text-[#90caf9] transition-colors">
-              PriceSnap
+              {brand}
             </span>
           </Link>
           <nav className="flex items-center gap-1 sm:gap-1.5 shrink-0">

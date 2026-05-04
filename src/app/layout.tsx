@@ -8,8 +8,9 @@ import { NewsletterSignup } from "@/components/NewsletterSignup";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
 import { Msaidizi } from "@/components/Msaidizi";
 import { getCachedCatalog } from "@/lib/catalog";
+import { APP_DISPLAY_NAME_DEFAULT, themeBootstrapInlineScript } from "@/lib/branding";
 
-const appName = process.env.NEXT_PUBLIC_APP_NAME ?? "PriceSnap";
+const appName = process.env.NEXT_PUBLIC_APP_NAME ?? APP_DISPLAY_NAME_DEFAULT;
 const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
 
 export const metadata: Metadata = {
@@ -18,7 +19,7 @@ export const metadata: Metadata = {
     template: `%s | ${appName}`,
   },
   description:
-    "Compare grocery prices across Kenyan supermarkets. Find the cheapest deals, build a basket, and save money on every shop.",
+    "Ma-bei — many prices. Compare grocery prices across Kenyan supermarkets, find the cheapest deals, build a basket, and save on every shop.",
   metadataBase: new URL(appUrl),
   openGraph: {
     title: `${appName} — Compare Supermarket Prices in Kenya`,
@@ -55,7 +56,7 @@ export default async function RootLayout({
         <meta name="theme-color" content="#ffffff" />
         <script
           dangerouslySetInnerHTML={{
-            __html: `(function(){try{var k='pricesnap_theme';var s=localStorage.getItem(k);var d=document.documentElement;var prefers=window.matchMedia('(prefers-color-scheme: dark)').matches;if(s==='dark'||(s!=='light'&&prefers))d.classList.add('dark');else d.classList.remove('dark');}catch(e){}})();`,
+            __html: themeBootstrapInlineScript(),
           }}
         />
       </head>

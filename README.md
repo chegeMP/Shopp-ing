@@ -1,6 +1,6 @@
-# PriceSnap — Supermarket Price Comparison
+# Ma-bei — Many prices, one place
 
-Compare grocery prices across Kenyan supermarkets. Find the cheapest deals, build a shopping basket, and see exactly how much you save.
+Compare grocery prices across Kenyan supermarkets. **Ma-bei** means *many prices* — find the cheapest deals, build a shopping basket, and see how much you save.
 
 ## Features
 
@@ -21,7 +21,7 @@ npm install
 # Run development server
 npm run dev
 
-# Open http://localhost:3000
+# Open http://localhost:3002
 ```
 
 ## Production Build
@@ -35,16 +35,30 @@ npm start
 
 ```bash
 # Build image
-docker build -t pricesnap .
+docker build -t ma-bei .
 
 # Run container
-docker run -p 3000:3000 pricesnap
+docker run -p 3002:3002 ma-bei
 
 # With environment variables
-docker run -p 3000:3000 \
-  -e NEXT_PUBLIC_APP_URL=https://pricesnap.example.com \
-  pricesnap
+docker run -p 3002:3002 \
+  -e NEXT_PUBLIC_APP_URL=https://ma-bei.example.com \
+  ma-bei
 ```
+
+## Deploy on Render (Free)
+
+This repo includes a `render.yaml` blueprint for one-click setup.
+
+1. Push your code to GitHub
+2. In Render, click **New +** -> **Blueprint**
+3. Select this repository and deploy
+4. Add all required environment variables from `.env.example` (and any payment/email keys you use)
+5. After deploy, set `NEXT_PUBLIC_APP_URL` to your Render URL and redeploy
+
+Notes:
+- The app runs as a Docker web service on Render's assigned `PORT`
+- Health checks use `/api/health`
 
 ## API Endpoints
 
@@ -61,8 +75,8 @@ Copy `.env.example` to `.env.local`:
 
 | Variable | Default | Description |
 |---|---|---|
-| `NEXT_PUBLIC_APP_NAME` | PriceSnap | App display name |
-| `NEXT_PUBLIC_APP_URL` | http://localhost:3000 | Canonical URL (used in sitemap/OG) |
+| `NEXT_PUBLIC_APP_NAME` | Ma-bei | App display name |
+| `NEXT_PUBLIC_APP_URL` | http://localhost:3002 | Canonical URL (used in sitemap/OG) |
 | `DATA_SOURCE` | memory | Data backend (`memory` or `database`) |
 | `CACHE_TTL` | 300 | Cache duration in seconds |
 

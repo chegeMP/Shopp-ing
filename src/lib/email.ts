@@ -1,5 +1,6 @@
 import Mailgun from "mailgun.js";
 import FormData from "form-data";
+import { appDisplayName } from "@/lib/branding";
 
 function escapeHtml(text: string): string {
   return text
@@ -24,7 +25,10 @@ function getDomain() {
 }
 
 function getFrom() {
-  return process.env.MAILGUN_FROM || `PriceSnap <noreply@${getDomain()}>`;
+  return (
+    process.env.MAILGUN_FROM ||
+    `${appDisplayName()} <noreply@${getDomain()}>`
+  );
 }
 
 export interface OrderItem {
@@ -43,7 +47,7 @@ export interface OrderEmailData {
   total: number;
   paymentMethod: string;
   deliveryAddress?: string;
-  /** PriceSnap fee (KSh), if applicable. */
+  /** Ma-bei / platform fee (KSh), if applicable. */
   platformFeeKes?: number;
   /** Supermarket remittance (KSh), if applicable. */
   supermarketPayoutKes?: number;
@@ -88,7 +92,7 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
       <!-- Header -->
       <div style="background:#2e7d32;padding:24px 20px;text-align:center">
         <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700">Order Confirmed</h1>
-        <p style="margin:6px 0 0;color:#c8e6c9;font-size:13px">Thank you for shopping with PriceSnap</p>
+        <p style="margin:6px 0 0;color:#c8e6c9;font-size:13px">Thank you for shopping with ${appDisplayName()}</p>
       </div>
 
       <!-- Order details -->
@@ -135,7 +139,7 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
                 ? `<tr>
               <td colspan="4" style="padding:10px 12px 0;font-size:12px;color:#666;background:#f9fbfd;border-top:1px solid #e8e8e8">
                 <strong>Settlement</strong> (from your payment): ${escapeHtml(
-                  process.env.NEXT_PUBLIC_APP_NAME || "PriceSnap",
+                  appDisplayName(),
                 )} fee <strong>KSh ${data.platformFeeKes.toLocaleString()}</strong>
                 · ${escapeHtml(data.storeName)} receives <strong>KSh ${data.supermarketPayoutKes.toLocaleString()}</strong>
               </td>
@@ -153,7 +157,7 @@ function buildOrderConfirmationHtml(data: OrderEmailData): string {
       <!-- Footer -->
       <div style="background:#f9f9f9;padding:16px 20px;border-top:1px solid #eee;text-align:center">
         <p style="margin:0;font-size:12px;color:#999">
-          Questions? Reply to this email or visit <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3002"}" style="color:#1a5dab">PriceSnap</a>.
+          Questions? Reply to this email or visit <a href="${process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3002"}" style="color:#1a5dab">${appDisplayName()}</a>.
         </p>
       </div>
     </div>
@@ -171,11 +175,11 @@ function buildWelcomeHtml(name?: string): string {
   <div style="max-width:600px;margin:0 auto;padding:20px">
     <div style="background:#fff;border:1px solid #e0e0e0;border-radius:6px;overflow:hidden">
       <div style="background:#1a5dab;padding:24px 20px;text-align:center">
-        <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700">Welcome to PriceSnap</h1>
+        <h1 style="margin:0;color:#fff;font-size:20px;font-weight:700">Welcome to ${appDisplayName()}</h1>
       </div>
       <div style="padding:24px 20px">
         <p style="margin:0 0 14px;font-size:15px;color:#333">
-          ${greeting}, welcome to <strong>PriceSnap</strong> — your smart supermarket price comparison tool.
+          ${greeting}, welcome to <strong>${appDisplayName()}</strong> — many prices, one place. Compare supermarket deals and save on every shop.
         </p>
         <p style="margin:0 0 14px;font-size:14px;color:#555">Here&rsquo;s what you&rsquo;ll get:</p>
         <ul style="margin:0 0 20px;padding-left:20px;font-size:14px;color:#555;line-height:1.8">
@@ -190,7 +194,7 @@ function buildWelcomeHtml(name?: string): string {
         </div>
       </div>
       <div style="background:#f9f9f9;padding:16px 20px;border-top:1px solid #eee;text-align:center">
-        <p style="margin:0;font-size:12px;color:#999">You received this because you subscribed on PriceSnap. You can unsubscribe anytime.</p>
+        <p style="margin:0;font-size:12px;color:#999">You received this because you subscribed on ${appDisplayName()}. You can unsubscribe anytime.</p>
       </div>
     </div>
   </div>
@@ -245,7 +249,7 @@ function buildPriceAlertHtml(data: PriceAlertEmailData): string {
         </div>
       </div>
       <div style="background:#f9f9f9;padding:16px 20px;border-top:1px solid #eee;text-align:center">
-        <p style="margin:0;font-size:12px;color:#999">You&rsquo;re receiving this because you subscribed to price alerts on PriceSnap.</p>
+        <p style="margin:0;font-size:12px;color:#999">You&rsquo;re receiving this because you subscribed to price alerts on ${appDisplayName()}.</p>
       </div>
     </div>
   </div>
@@ -272,7 +276,7 @@ export async function sendWelcomeEmail(data: SubscriptionEmailData) {
   return mg.messages.create(domain, {
     from: getFrom(),
     to: [data.to],
-    subject: "Welcome to PriceSnap — your price comparison assistant",
+    subject: `Welcome to ${appDisplayName()} — many prices, smarter shopping`,
     html: buildWelcomeHtml(data.name),
   });
 }

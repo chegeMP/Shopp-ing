@@ -1,7 +1,7 @@
 {
-  "name": "PriceSnap",
-  "short_name": "PriceSnap",
-  "description": "Compare supermarket prices across Kenya",
+  "name": "Ma-bei",
+  "short_name": "Ma-bei",
+  "description": "Many prices — compare supermarket deals across Kenya",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#ffffff",

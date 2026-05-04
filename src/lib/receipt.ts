@@ -1,5 +1,13 @@
 /** Last completed order receipt (session-only, overwritten on next checkout). */
 
+import {
+  APP_DISPLAY_NAME_DEFAULT,
+  STORAGE,
+  STORAGE_LEGACY_KEYS,
+  readSessionStorageWithMigration,
+  removeSessionStorageKeys,
+} from "@/lib/branding";
+
 export type ReceiptLineItem = {
   name: string;
   quantity: number;
@@ -21,23 +29,27 @@ export interface ReceiptData {
   items: ReceiptLineItem[];
   /** What the customer pays (basket total). */
   grandTotal: number;
-  /** PriceSnap fee retained from `grandTotal` (KSh). */
+  /** Platform fee retained from `grandTotal` (KSh). */
   platformFeeKes: number;
   /** Amount attributed to the supermarket after the platform fee (KSh). */
   supermarketPayoutKes: number;
 }
 
-export const RECEIPT_STORAGE_KEY = "pricesnap_last_receipt";
+export const RECEIPT_STORAGE_KEY = STORAGE.receipt;
 
 export function saveReceiptToStorage(data: ReceiptData): void {
   if (typeof window === "undefined") return;
   sessionStorage.setItem(RECEIPT_STORAGE_KEY, JSON.stringify(data));
+  removeSessionStorageKeys([...STORAGE_LEGACY_KEYS.receipt]);
 }
 
 export function loadReceiptFromStorage(): ReceiptData | null {
   if (typeof window === "undefined") return null;
   try {
-    const raw = sessionStorage.getItem(RECEIPT_STORAGE_KEY);
+    const raw = readSessionStorageWithMigration(
+      RECEIPT_STORAGE_KEY,
+      STORAGE_LEGACY_KEYS.receipt,
+    );
     if (!raw) return null;
     const parsed = JSON.parse(raw) as ReceiptData;
     if (
@@ -63,7 +75,12 @@ export function loadReceiptFromStorage(): ReceiptData | null {
 
 export function receiptFilename(orderNo: string): string {
   const safe = orderNo.replace(/\W+/g, "-");
-  return `PriceSnap-receipt-${safe}.html`;
+  const brand = (
+    typeof process !== "undefined"
+      ? process.env.NEXT_PUBLIC_APP_NAME ?? APP_DISPLAY_NAME_DEFAULT
+      : APP_DISPLAY_NAME_DEFAULT
+  ).replace(/\W+/g, "");
+  return `${brand}-receipt-${safe}.html`;
 }
 
 export function escapeHtml(text: string): string {
@@ -76,7 +93,7 @@ export function escapeHtml(text: string): string {
 
 export function buildStandaloneReceiptHtml(
   data: ReceiptData,
-  appName = "PriceSnap",
+  appName = APP_DISPLAY_NAME_DEFAULT,
 ): string {
   const rows = data.items
     .map(
@@ -164,8 +181,8 @@ export function buildStandaloneReceiptHtml(
 export function downloadReceiptAsHtmlFile(data: ReceiptData): void {
   const name =
     (typeof process !== "undefined"
-      ? process.env.NEXT_PUBLIC_APP_NAME ?? "PriceSnap"
-      : "PriceSnap");
+      ? process.env.NEXT_PUBLIC_APP_NAME ?? APP_DISPLAY_NAME_DEFAULT
+      : APP_DISPLAY_NAME_DEFAULT);
   const html = buildStandaloneReceiptHtml(data, name);
   const blob = new Blob([html], { type: "text/html;charset=utf-8" });
   const url = URL.createObjectURL(blob);
