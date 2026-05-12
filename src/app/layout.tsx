@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import { Header } from "@/components/Header";
 import { BasketProvider } from "@/components/BasketContext";
@@ -89,6 +90,7 @@ export default async function RootLayout({
             </BasketProvider>
           </ThemeProvider>
         </CatalogProvider>
+        <Analytics />
       </body>
     </html>
   );
