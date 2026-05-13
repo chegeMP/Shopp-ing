@@ -79,6 +79,49 @@ Copy `.env.example` to `.env.local`:
 | `NEXT_PUBLIC_APP_URL` | http://localhost:3002 | Canonical URL (used in sitemap/OG) |
 | `DATA_SOURCE` | memory | Data backend (`memory` or `database`) |
 | `CACHE_TTL` | 300 | Cache duration in seconds |
+| `CRON_SECRET` | — | Required by the price scraper cron endpoints (any long random string) |
+
+## Price Scraping
+
+The default catalog in `src/data/products.ts` is **static sample data**. To
+keep prices fresh against real supermarkets:
+
+1. Switch to a database backend: set `DATA_SOURCE=database` and provision
+   `DATABASE_URL`, then `npm run db:push && npm run db:seed`.
+2. Set `CRON_SECRET` to a long random string in Vercel project settings.
+3. Vercel Cron will hit two endpoints daily (see `vercel.json`):
+   - `GET /api/cron/scrape/carrefour` — scrapes Carrefour KE's public JSON
+   - `GET /api/cron/scrape/naivas`   — scrapes Naivas Online's public JSON
+4. For stores without an online catalog (Cleanshelf, Chandarana, QuickMart),
+   edit `data/manual-prices.csv` and trigger an import on demand:
+
+   ```bash
+   curl "https://your-app.vercel.app/api/cron/scrape/manual?secret=$CRON_SECRET"
+   ```
+
+### Confirming the scrapers work
+
+Both scrapers ship with **two candidate JSON paths each**, because the
+supermarkets' internal APIs aren't documented. Run once in dry-run mode and
+inspect the response shape in the Vercel logs:
+
+```bash
+curl "https://your-app.vercel.app/api/cron/scrape/carrefour?secret=$CRON_SECRET&dryRun=1"
+```
+
+If neither path returns data, open `src/lib/scrape/carrefour.ts` (or
+`naivas.ts`), adjust `SEARCH_PATHS`, and re-run.
+
+### Politeness rules (built in)
+
+- `User-Agent` identifies the bot and includes a contact address.
+- `robots.txt` is fetched and honored (host + path + `Crawl-delay`).
+- ≥2.5 s jittered delay between requests on the same host.
+- One retry on 5xx, then give up.
+- Out-of-bounds prices (< KES 5 or > KES 100 000) are dropped.
+
+Stop scraping any store the moment they ask — comment out the cron entry in
+`vercel.json` and redeploy.
 
 ## Project Structure
 

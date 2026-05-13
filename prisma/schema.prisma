@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
 }
 
 model Supermarket {
@@ -34,12 +35,16 @@ model Product {
 }
 
 model ProductPrice {
-  id            Int     @id @default(autoincrement())
+  id            Int       @id @default(autoincrement())
   productId     String
   supermarketId String
   price         Int
-  onSale        Boolean @default(false)
+  onSale        Boolean   @default(false)
   originalPrice Int?
+  externalSku   String?
+  externalUrl   String?
+  source        String?
+  lastVerifiedAt DateTime?
 
   product     Product     @relation(fields: [productId], references: [id], onDelete: Cascade)
   supermarket Supermarket @relation(fields: [supermarketId], references: [id], onDelete: Cascade)

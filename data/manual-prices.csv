@@ -1,0 +1,9 @@
+# Manual price overrides for stores without an online catalog.
+# Edit by hand; the cron job at /api/cron/scrape/manual will pick this up.
+# Columns: productId,supermarketId,price,onSale,originalPrice
+# - price is in KES (integer).
+# - onSale: true/false (default false).
+# - originalPrice: optional, only when onSale=true.
+productId,supermarketId,price,onSale,originalPrice
+# unga-2kg,cleanshelf,192,false,
+# sugar-2kg,chandarana,310,true,330
