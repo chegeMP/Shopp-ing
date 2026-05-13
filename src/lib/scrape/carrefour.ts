@@ -4,6 +4,7 @@ import {
   politeFetch,
   upsertPrice,
   startSummary,
+  computeDailyBatchOffset,
   type ScrapeLogger,
   type ScrapeSummary,
   consoleLogger,
@@ -69,12 +70,10 @@ async function searchCarrefour(
         continue;
       }
       const json = (await res.json()) as unknown;
-      // Both endpoints return either an array of products
-      // or { products: [...] }.
       const list: VtexProduct[] = Array.isArray(json)
         ? (json as VtexProduct[])
         : Array.isArray((json as { products?: unknown }).products)
-          ? ((json as { products: VtexProduct[] }).products)
+          ? (json as { products: VtexProduct[] }).products
           : [];
       if (list.length === 0) continue;
       return list[0]!;
@@ -86,7 +85,14 @@ async function searchCarrefour(
 }
 
 export async function runCarrefourScrape(
-  opts: { dryRun?: boolean; logger?: ScrapeLogger } = {},
+  opts: {
+    dryRun?: boolean;
+    logger?: ScrapeLogger;
+    /** Max products per invocation (default: SCRAPE_CRON_LIMIT or 15). */
+    limit?: number;
+    /** If set, scrape this slice only; otherwise UTC day rotation. */
+    offset?: number;
+  } = {},
 ): Promise<ScrapeSummary> {
   const log = opts.logger ?? consoleLogger;
   const summary = startSummary(SUPERMARKET_ID);
@@ -94,8 +100,15 @@ export async function runCarrefourScrape(
 
   const prisma = getPrisma();
 
-  // Pull only the (productId, name) pairs we need, and any cached SKU/URL.
-  const products = await prisma.product.findMany({
+  const envBatch = Number(process.env.SCRAPE_CRON_LIMIT);
+  let batchSize =
+    Number.isFinite(envBatch) && envBatch > 0 ? Math.floor(envBatch) : 15;
+  if (opts.limit != null && Number.isFinite(opts.limit) && opts.limit > 0) {
+    batchSize = Math.min(500, Math.floor(opts.limit));
+  }
+
+  const all = await prisma.product.findMany({
+    orderBy: { id: "asc" },
     select: {
       id: true,
       name: true,
@@ -106,22 +119,33 @@ export async function runCarrefourScrape(
     },
   });
 
+  const total = all.length;
+  const { offset, batchIndex, batchCount } = computeDailyBatchOffset(
+    total,
+    batchSize,
+    opts.offset,
+  );
+  const products = all.slice(offset, offset + batchSize);
+  summary.batch = {
+    totalProducts: total,
+    offset,
+    limit: batchSize,
+    batchIndex,
+    batchCount,
+  };
+
   for (const p of products) {
     summary.attempted++;
     try {
-      // Prefer cached SKU/URL on subsequent runs; fall back to name search.
       const cached = p.prices[0];
       let result: VtexProduct | null = null;
 
-      if (cached?.externalUrl) {
-        // Direct product hit. VTEX has a JSON sibling at /api/catalog_system/pub/products/search?fq=productId:<id>
-        if (cached.externalSku) {
-          const url = `${ORIGIN}/api/catalog_system/pub/products/search?fq=productId:${encodeURIComponent(cached.externalSku)}`;
-          const res = await politeFetch(url, { logger: log });
-          if (res.ok) {
-            const json = (await res.json()) as VtexProduct[];
-            result = json[0] ?? null;
-          }
+      if (cached?.externalUrl && cached.externalSku) {
+        const url = `${ORIGIN}/api/catalog_system/pub/products/search?fq=productId:${encodeURIComponent(cached.externalSku)}`;
+        const res = await politeFetch(url, { logger: log });
+        if (res.ok) {
+          const json = (await res.json()) as VtexProduct[];
+          result = json[0] ?? null;
         }
       }
       if (!result) result = await searchCarrefour(p.name, log);

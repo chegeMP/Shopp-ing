@@ -10,11 +10,34 @@ export const dynamic = "force-dynamic";
 // Bumped to 60s; raise to 300 on Vercel Pro for safer scraping windows.
 export const maxDuration = 60;
 
-const RUNNERS: Record<string, (opts: { dryRun?: boolean }) => Promise<ScrapeSummary>> = {
+const RUNNERS: Record<
+  string,
+  (opts: {
+    dryRun?: boolean;
+    limit?: number;
+    offset?: number;
+  }) => Promise<ScrapeSummary>
+> = {
   carrefour: runCarrefourScrape,
   naivas: runNaivasScrape,
   manual: runManualImport,
 };
+
+function parseBatchParams(req: NextRequest): { limit?: number; offset?: number } {
+  const limitParam = req.nextUrl.searchParams.get("limit");
+  const offsetParam = req.nextUrl.searchParams.get("offset");
+  let limit: number | undefined;
+  let offset: number | undefined;
+  if (limitParam != null) {
+    const n = Number(limitParam);
+    if (Number.isFinite(n) && n > 0) limit = Math.min(500, Math.floor(n));
+  }
+  if (offsetParam != null) {
+    const n = Number(offsetParam);
+    if (Number.isFinite(n) && n >= 0) offset = Math.floor(n);
+  }
+  return { limit, offset };
+}
 
 function isAuthorized(req: NextRequest): boolean {
   const secret = process.env.CRON_SECRET;
@@ -55,9 +78,13 @@ export async function GET(
   }
 
   const dryRun = req.nextUrl.searchParams.get("dryRun") === "1";
+  const { limit, offset } = parseBatchParams(req);
 
   try {
-    const summary = await runner({ dryRun });
+    const summary = await runner({
+      dryRun,
+      ...(store === "manual" ? {} : { limit, offset }),
+    });
     return NextResponse.json({ ok: true, dryRun, summary });
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

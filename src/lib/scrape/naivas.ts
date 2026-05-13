@@ -4,6 +4,7 @@ import {
   politeFetch,
   upsertPrice,
   startSummary,
+  computeDailyBatchOffset,
   type ScrapeLogger,
   type ScrapeSummary,
   consoleLogger,
@@ -88,14 +89,28 @@ async function searchNaivas(
 }
 
 export async function runNaivasScrape(
-  opts: { dryRun?: boolean; logger?: ScrapeLogger } = {},
+  opts: {
+    dryRun?: boolean;
+    logger?: ScrapeLogger;
+    limit?: number;
+    offset?: number;
+  } = {},
 ): Promise<ScrapeSummary> {
   const log = opts.logger ?? consoleLogger;
   const summary = startSummary(SUPERMARKET_ID);
   const t0 = Date.now();
 
   const prisma = getPrisma();
-  const products = await prisma.product.findMany({
+
+  const envBatch = Number(process.env.SCRAPE_CRON_LIMIT);
+  let batchSize =
+    Number.isFinite(envBatch) && envBatch > 0 ? Math.floor(envBatch) : 15;
+  if (opts.limit != null && Number.isFinite(opts.limit) && opts.limit > 0) {
+    batchSize = Math.min(500, Math.floor(opts.limit));
+  }
+
+  const all = await prisma.product.findMany({
+    orderBy: { id: "asc" },
     select: {
       id: true,
       name: true,
@@ -105,6 +120,21 @@ export async function runNaivasScrape(
       },
     },
   });
+
+  const total = all.length;
+  const { offset, batchIndex, batchCount } = computeDailyBatchOffset(
+    total,
+    batchSize,
+    opts.offset,
+  );
+  const products = all.slice(offset, offset + batchSize);
+  summary.batch = {
+    totalProducts: total,
+    offset,
+    limit: batchSize,
+    batchIndex,
+    batchCount,
+  };
 
   for (const p of products) {
     summary.attempted++;

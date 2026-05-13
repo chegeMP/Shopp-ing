@@ -29,6 +29,9 @@ export async function runManualImport(
     filePath?: string;
     csvContent?: string;
     logger?: ScrapeLogger;
+    /** Ignored — manual import is fast; kept for runner signature parity. */
+    limit?: number;
+    offset?: number;
   } = {},
 ): Promise<ScrapeSummary> {
   const log = opts.logger ?? consoleLogger;

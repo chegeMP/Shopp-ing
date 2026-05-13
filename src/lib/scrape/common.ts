@@ -1,5 +1,15 @@
 import "server-only";
+import { setDefaultResultOrder } from "node:dns";
 import { getPrisma } from "@/lib/prisma";
+
+// Akamai-fronted hosts (Carrefour KE) often return IPv6 addresses first.
+// Many Kenyan ISPs have broken IPv6 paths, which makes fetch hang for ~30s
+// before falling back. Forcing IPv4-first makes the scrape predictable.
+try {
+  setDefaultResultOrder("ipv4first");
+} catch {
+  /* ignore: not supported on older Node */
+}
 
 const USER_AGENT =
   "ma-bei-price-bot/0.1 (+https://shopp-ing-five.vercel.app; contact: ops@example.com)";
@@ -199,6 +209,14 @@ export interface ScrapeSummary {
   applied: number;
   skipped: number;
   errors: string[];
+  /** When batching, describes which slice of the catalog was processed */
+  batch?: {
+    totalProducts: number;
+    offset: number;
+    limit: number;
+    batchIndex: number;
+    batchCount: number;
+  };
 }
 
 export function startSummary(store: string): ScrapeSummary {
@@ -211,4 +229,34 @@ export function startSummary(store: string): ScrapeSummary {
     skipped: 0,
     errors: [],
   };
+}
+
+/** UTC calendar day index — used to rotate which catalog slice each cron run scrapes. */
+export function utcDayBucket(): number {
+  return Math.floor(Date.now() / 86_400_000);
+}
+
+/**
+ * Pick a stable batch window so daily crons cover the whole catalog over time
+ * without exceeding serverless timeouts.
+ */
+export function computeDailyBatchOffset(
+  totalProducts: number,
+  batchSize: number,
+  explicitOffset?: number,
+): { offset: number; batchIndex: number; batchCount: number } {
+  const size = Math.max(1, batchSize);
+  const total = Math.max(0, totalProducts);
+  const batchCount = total === 0 ? 1 : Math.ceil(total / size);
+
+  if (explicitOffset != null) {
+    const offset = Math.min(Math.max(0, explicitOffset), Math.max(0, total - 1));
+    const batchIndex = Math.min(batchCount - 1, Math.floor(offset / size));
+    return { offset, batchIndex, batchCount };
+  }
+
+  const day = utcDayBucket();
+  const batchIndex = day % batchCount;
+  const offset = batchIndex * size;
+  return { offset, batchIndex, batchCount };
 }

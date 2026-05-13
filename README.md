@@ -80,6 +80,7 @@ Copy `.env.example` to `.env.local`:
 | `DATA_SOURCE` | memory | Data backend (`memory` or `database`) |
 | `CACHE_TTL` | 300 | Cache duration in seconds |
 | `CRON_SECRET` | — | Required by the price scraper cron endpoints (any long random string) |
+| `SCRAPE_CRON_LIMIT` | `15` | Max products scraped per cron run per store (keep low on Vercel Hobby 60s timeout) |
 
 ## Price Scraping
 
@@ -92,6 +93,11 @@ keep prices fresh against real supermarkets:
 3. Vercel Cron will hit two endpoints daily (see `vercel.json`):
    - `GET /api/cron/scrape/carrefour` — scrapes Carrefour KE's public JSON
    - `GET /api/cron/scrape/naivas`   — scrapes Naivas Online's public JSON
+   Each run only processes a **batch** of products (default **15** per store)
+   so the function finishes within Vercel's **60s** limit. The batch **rotates
+   by UTC calendar day**, so over a week the full catalog is covered. Override
+   with query params: `?limit=20&offset=40`. Set `SCRAPE_CRON_LIMIT` in Vercel
+   env to change the default batch size (lower = safer on Hobby).
 4. For stores without an online catalog (Cleanshelf, Chandarana, QuickMart),
    edit `data/manual-prices.csv` and trigger an import on demand:
 
