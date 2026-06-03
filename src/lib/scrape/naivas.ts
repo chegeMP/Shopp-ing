@@ -1,4 +1,6 @@
 import "server-only";
+import { parse } from "node-html-parser";
+
 import { getPrisma } from "@/lib/prisma";
 import {
   politeFetch,
@@ -11,81 +13,86 @@ import {
 } from "./common";
 
 const SUPERMARKET_ID = "naivas";
-const ORIGIN = "https://naivas.online";
+const ORIGIN = "https://www.naivas.online";
 
 /**
- * Naivas Online uses a non-public JSON API. The exact path is not documented;
- * the two most common shapes seen are:
- *   /api/products?search=<q>
- *   /api/catalog/search?keyword=<q>
- * Confirm by running the scraper in dry-run once and inspecting the logs.
+ * Naivas Online runs on Bagisto (Webkul / Laravel). Each product detail page
+ * embeds a Schema.org Product blob in a <script type="application/ld+json">
+ * tag (Bagisto HTML-encodes the contents, so we decode before JSON.parse).
+ *
+ * We only scrape products that have a manually-mapped `externalUrl`. This
+ * avoids Naivas's poor search relevance returning wrong products.
+ *
+ * To map a product, set ProductPrice.externalUrl for (productId, "naivas")
+ * — either via /api/cron/scrape/naivas-urls (CSV import) or directly in DB.
  */
-const SEARCH_PATHS = [
-  (q: string) => `/api/products?search=${encodeURIComponent(q)}&limit=5`,
-  (q: string) => `/api/catalog/search?keyword=${encodeURIComponent(q)}&limit=5`,
-];
 
-interface NaivasProduct {
-  id?: string | number;
-  sku?: string;
+interface ProductSchema {
   name?: string;
-  title?: string;
-  slug?: string;
+  sku?: string;
   url?: string;
-  price?: number | string;
-  sale_price?: number | string;
-  regular_price?: number | string;
+  offers?: {
+    priceCurrency?: string;
+    price?: string | number;
+    availability?: string;
+  };
 }
 
-function toNumber(v: unknown): number | null {
-  if (typeof v === "number") return Number.isFinite(v) ? v : null;
-  if (typeof v === "string") {
-    const cleaned = v.replace(/[^0-9.]/g, "");
-    const n = Number(cleaned);
-    return Number.isFinite(n) ? n : null;
-  }
-  return null;
+const HTML_ENTITIES: Record<string, string> = {
+  "&quot;": '"',
+  "&amp;": "&",
+  "&apos;": "'",
+  "&lt;": "<",
+  "&gt;": ">",
+  "&#39;": "'",
+};
+
+function decodeEntities(s: string): string {
+  return s.replace(/&(quot|amp|apos|lt|gt|#39);/g, (m) => HTML_ENTITIES[m] ?? m);
 }
 
-function pickPrice(p: NaivasProduct): {
-  price: number | null;
-  originalPrice: number | null;
-} {
-  const sale = toNumber(p.sale_price);
-  const list = toNumber(p.regular_price ?? p.price);
-  if (sale != null && list != null && sale < list) {
-    return { price: sale, originalPrice: list };
-  }
-  return { price: list ?? sale, originalPrice: null };
-}
-
-async function searchNaivas(
-  query: string,
-  log: ScrapeLogger,
-): Promise<NaivasProduct | null> {
-  for (const buildPath of SEARCH_PATHS) {
-    const url = `${ORIGIN}${buildPath(query)}`;
+function parseProductSchema(html: string): ProductSchema | null {
+  const root = parse(html);
+  const scripts = root.querySelectorAll('script[type="application/ld+json"]');
+  for (const script of scripts) {
+    const raw = script.text?.trim();
+    if (!raw) continue;
+    const decoded = decodeEntities(raw);
+    let json: unknown;
     try {
-      const res = await politeFetch(url, { logger: log });
-      if (!res.ok) {
-        log.warn(`search ${res.status}`, { url });
-        continue;
+      json = JSON.parse(decoded);
+    } catch {
+      continue;
+    }
+    const candidates: unknown[] = Array.isArray(json) ? json : [json];
+    for (const c of candidates) {
+      if (
+        c &&
+        typeof c === "object" &&
+        (c as { "@type"?: string })["@type"] === "Product"
+      ) {
+        return c as ProductSchema;
       }
-      const json = (await res.json()) as unknown;
-      const list: NaivasProduct[] = Array.isArray(json)
-        ? (json as NaivasProduct[])
-        : Array.isArray((json as { data?: unknown }).data)
-          ? ((json as { data: NaivasProduct[] }).data)
-          : Array.isArray((json as { products?: unknown }).products)
-            ? ((json as { products: NaivasProduct[] }).products)
-            : [];
-      if (list.length === 0) continue;
-      return list[0]!;
-    } catch (err) {
-      log.warn(`search failed`, { url, err: String(err) });
     }
   }
   return null;
+}
+
+function readPrice(schema: ProductSchema): {
+  price: number | null;
+  inStock: boolean;
+} {
+  const o = schema.offers;
+  if (!o) return { price: null, inStock: false };
+  const raw =
+    typeof o.price === "string"
+      ? Number(o.price)
+      : typeof o.price === "number"
+        ? o.price
+        : NaN;
+  const price = Number.isFinite(raw) && raw > 0 ? raw : null;
+  const inStock = (o.availability ?? "").toLowerCase().includes("instock");
+  return { price, inStock };
 }
 
 export async function runNaivasScrape(
@@ -109,7 +116,12 @@ export async function runNaivasScrape(
     batchSize = Math.min(500, Math.floor(opts.limit));
   }
 
+  // Only consider products with a mapped externalUrl. Without it, we cannot
+  // reliably identify the Naivas SKU (search relevance is unreliable).
   const all = await prisma.product.findMany({
+    where: {
+      prices: { some: { supermarketId: SUPERMARKET_ID, externalUrl: { not: null } } },
+    },
     orderBy: { id: "asc" },
     select: {
       id: true,
@@ -136,36 +148,48 @@ export async function runNaivasScrape(
     batchCount,
   };
 
+  if (total === 0) {
+    log.info("nothing to do: no Naivas-mapped products yet", {
+      hint: "POST URLs to /api/cron/scrape/naivas-urls or set ProductPrice.externalUrl manually",
+    });
+    summary.durationMs = Date.now() - t0;
+    return summary;
+  }
+
   for (const p of products) {
     summary.attempted++;
     try {
-      // Naivas doesn't have a clean "fetch by id" path we can rely on yet,
-      // so we always go through search. Once you confirm the JSON shape,
-      // you can short-circuit using cached externalSku.
-      const match = await searchNaivas(p.name, log);
-      if (!match) {
+      const url = p.prices[0]?.externalUrl;
+      if (!url) {
         summary.skipped++;
-        log.warn(`no match`, { product: p.name });
         continue;
       }
-
-      const { price, originalPrice } = pickPrice(match);
+      const res = await politeFetch(url, { logger: log });
+      if (!res.ok) {
+        summary.skipped++;
+        log.warn(`${res.status}`, { product: p.name, url });
+        continue;
+      }
+      const html = await res.text();
+      const schema = parseProductSchema(html);
+      if (!schema) {
+        summary.skipped++;
+        log.warn("no Product schema on page", { product: p.name, url });
+        continue;
+      }
+      const { price, inStock } = readPrice(schema);
       if (price == null) {
         summary.skipped++;
-        log.warn(`no price`, { product: p.name, match: match.name ?? match.title });
+        log.warn("no price in schema", { product: p.name, schema });
         continue;
       }
 
-      const externalSku = match.sku ?? (match.id != null ? String(match.id) : null);
-      const externalUrl =
-        match.url ??
-        (match.slug ? `${ORIGIN}/products/${match.slug}` : null);
-
-      log.info(`match`, {
+      log.info("match", {
         product: p.name,
-        match: match.name ?? match.title,
+        match: schema.name,
         price,
-        originalPrice,
+        inStock,
+        sku: schema.sku,
       });
 
       if (!opts.dryRun) {
@@ -174,10 +198,10 @@ export async function runNaivasScrape(
             productId: p.id,
             supermarketId: SUPERMARKET_ID,
             price,
-            onSale: originalPrice != null,
-            originalPrice,
-            externalSku,
-            externalUrl,
+            onSale: false,
+            originalPrice: null,
+            externalSku: schema.sku ?? p.prices[0]?.externalSku ?? null,
+            externalUrl: url,
             source: "naivas-scraper",
           },
           log,
@@ -190,7 +214,7 @@ export async function runNaivasScrape(
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       summary.errors.push(`${p.name}: ${msg}`);
-      log.error(`error scraping`, { product: p.name, err: msg });
+      log.error("error scraping", { product: p.name, err: msg });
     }
   }
 

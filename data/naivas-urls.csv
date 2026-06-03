@@ -1,0 +1,6 @@
+# Map your local Product.id to the canonical Naivas product URL.
+# Used by /api/cron/scrape/naivas-urls to seed ProductPrice.externalUrl.
+# Columns: productId,externalUrl
+# Example:
+# brookside-milk-1l,https://www.naivas.online/brookside-fresh-milk-1l
+productId,externalUrl

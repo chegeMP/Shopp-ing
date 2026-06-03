@@ -1,7 +1,9 @@
 import { NextResponse, type NextRequest } from "next/server";
 
 import { runCarrefourScrape } from "@/lib/scrape/carrefour";
+import { runGreenspoonScrape } from "@/lib/scrape/greenspoon";
 import { runNaivasScrape } from "@/lib/scrape/naivas";
+import { runNaivasUrlImport } from "@/lib/scrape/naivas-urls";
 import { runManualImport } from "@/lib/scrape/manual";
 import type { ScrapeSummary } from "@/lib/scrape/common";
 
@@ -19,7 +21,9 @@ const RUNNERS: Record<
   }) => Promise<ScrapeSummary>
 > = {
   carrefour: runCarrefourScrape,
+  greenspoon: runGreenspoonScrape,
   naivas: runNaivasScrape,
+  "naivas-urls": runNaivasUrlImport,
   manual: runManualImport,
 };
 
@@ -81,9 +85,10 @@ export async function GET(
   const { limit, offset } = parseBatchParams(req);
 
   try {
+    const passBatch = store !== "manual" && store !== "naivas-urls";
     const summary = await runner({
       dryRun,
-      ...(store === "manual" ? {} : { limit, offset }),
+      ...(passBatch ? { limit, offset } : {}),
     });
     return NextResponse.json({ ok: true, dryRun, summary });
   } catch (err) {

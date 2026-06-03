@@ -1,6 +1,6 @@
 "use client";
 
-import { type Category, categories } from "@/data/products";
+import { type Category } from "@/data/products";
 import { useMemo } from "react";
 
 import { useCatalog } from "@/components/CatalogContext";
@@ -12,6 +12,10 @@ interface CategoryFilterProps {
 
 export function CategoryFilter({ selected, onSelect }: CategoryFilterProps) {
   const { products } = useCatalog();
+  const categories = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category))).sort((a, b) => a.localeCompare(b)),
+    [products]
+  );
 
   const counts = useMemo(() => {
     const map: Record<string, number> = {};

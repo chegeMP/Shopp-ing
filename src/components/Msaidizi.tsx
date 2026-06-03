@@ -7,7 +7,6 @@ import {
   getLowestPrice,
   getHighestPrice,
   getSavings,
-  categories,
 } from "@/data/products";
 import { useCatalog } from "@/components/CatalogContext";
 
@@ -22,6 +21,9 @@ function generateReply(
   ctx: { products: Product[]; supermarkets: Supermarket[] }
 ): string {
   const { products, supermarkets } = ctx;
+  const categories = Array.from(new Set(products.map((p) => p.category))).sort((a, b) =>
+    a.localeCompare(b)
+  );
   const q = input.toLowerCase().trim();
 
   // Greetings

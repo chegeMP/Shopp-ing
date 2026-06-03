@@ -4,7 +4,7 @@ Compare grocery prices across Kenyan supermarkets. **Ma-bei** means *many prices
 
 ## Features
 
-- **Price comparison** — side-by-side prices for 24+ products across 5 supermarkets (Naivas, QuickMart, Carrefour, Cleanshelf, Chandarana)
+- **Price comparison** — side-by-side prices for 24+ products across 6 supermarkets (Naivas, QuickMart, Carrefour, Cleanshelf, Chandarana, Greenspoon)
 - **Smart basket** — add items and see total cost at each store, plus an optimal mix that buys each item at its cheapest store
 - **Msaidizi assistant** — chat-based shopping assistant that answers questions about prices, deals, and stores
 - **API layer** — REST endpoints at `/api/products`, `/api/supermarkets`, `/api/search`, `/api/health`
@@ -91,32 +91,65 @@ keep prices fresh against real supermarkets:
    `DATABASE_URL`, then `npm run db:push && npm run db:seed`.
 2. Set `CRON_SECRET` to a long random string in Vercel project settings.
 3. Vercel Cron will hit two endpoints daily (see `vercel.json`):
-   - `GET /api/cron/scrape/carrefour` — scrapes Carrefour KE's public JSON
-   - `GET /api/cron/scrape/naivas`   — scrapes Naivas Online's public JSON
+   - `GET /api/cron/scrape/greenspoon` — Greenspoon. Uses the **public
+     WooCommerce Store API** (`/wp-json/wc/store/v1/products?search=…`), so
+     no HTML parsing or URL mapping needed. A name-similarity guard filters
+     out unrelated top hits.
+   - `GET /api/cron/scrape/naivas` — Naivas Online. Reads the Schema.org
+     `Product` JSON-LD off each mapped product detail page.
+
    Each run only processes a **batch** of products (default **15** per store)
    so the function finishes within Vercel's **60s** limit. The batch **rotates
    by UTC calendar day**, so over a week the full catalog is covered. Override
    with query params: `?limit=20&offset=40`. Set `SCRAPE_CRON_LIMIT` in Vercel
    env to change the default batch size (lower = safer on Hobby).
-4. For stores without an online catalog (Cleanshelf, Chandarana, QuickMart),
-   edit `data/manual-prices.csv` and trigger an import on demand:
+
+   The `carrefour` runner is still wired into `/api/cron/scrape/carrefour`
+   but is **not on the cron** — Carrefour KE sits behind Akamai Bot Manager
+   and rejects datacenter IPs (Vercel functions) with `403`/`429`. Hit it
+   manually if you ever want to retry, or wire in a real-browser worker /
+   residential proxy.
+
+### Mapping Naivas product URLs
+
+The Naivas scraper does **not** search — Bagisto search relevance is poor
+("milk" returns frying pans). Instead, you map each local product to its
+canonical Naivas URL once:
+
+1. Open `data/naivas-urls.csv` and add rows: `productId,externalUrl`.
+2. Hit the import endpoint to copy them into `ProductPrice.externalUrl`:
 
    ```bash
-   curl "https://your-app.vercel.app/api/cron/scrape/manual?secret=$CRON_SECRET"
+   curl "https://your-app.vercel.app/api/cron/scrape/naivas-urls?secret=$CRON_SECRET"
    ```
+
+3. From then on, the daily `naivas` cron refreshes prices for those rows
+   only — unmapped products are skipped.
+
+### Greenspoon caveat
+
+Greenspoon is upmarket / specialty-focused, so several mass-market staples
+(local maize flour, sugar brands, etc.) simply aren't in their catalog. The
+similarity guard will skip those products rather than write a wrong price.
+Expect partial coverage and treat Greenspoon as a "premium price reference"
+rather than a fully comparable basket.
+
+### Manual stores
+
+For stores without a scrapable online catalog (Cleanshelf, Chandarana,
+QuickMart), edit `data/manual-prices.csv` and trigger an import on demand:
+
+```bash
+curl "https://your-app.vercel.app/api/cron/scrape/manual?secret=$CRON_SECRET"
+```
 
 ### Confirming the scrapers work
 
-Both scrapers ship with **two candidate JSON paths each**, because the
-supermarkets' internal APIs aren't documented. Run once in dry-run mode and
-inspect the response shape in the Vercel logs:
+Run once in dry-run mode and inspect the response shape in Vercel logs:
 
 ```bash
-curl "https://your-app.vercel.app/api/cron/scrape/carrefour?secret=$CRON_SECRET&dryRun=1"
+curl "https://your-app.vercel.app/api/cron/scrape/greenspoon?secret=$CRON_SECRET&dryRun=1"
 ```
-
-If neither path returns data, open `src/lib/scrape/carrefour.ts` (or
-`naivas.ts`), adjust `SEARCH_PATHS`, and re-run.
 
 ### Politeness rules (built in)
 

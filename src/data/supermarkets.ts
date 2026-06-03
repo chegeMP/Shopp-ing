@@ -54,4 +54,13 @@ export const supermarkets: Supermarket[] = [
     tagline: "Foodplus experience",
     rating: 4.1,
   },
+  {
+    id: "greenspoon",
+    name: "Greenspoon",
+    initial: "G",
+    color: "#15803d",
+    bgLight: "#ecfdf5",
+    tagline: "Quality groceries, delivered",
+    rating: 4.4,
+  },
 ];

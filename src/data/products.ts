@@ -9,7 +9,8 @@ export type Category =
   | "Fresh Produce"
   | "Meat & Poultry"
   | "Bakery"
-  | "Alcohol";
+  | "Alcohol"
+  | "Appliances";
 
 export interface ProductPrice {
   supermarketId: string;
@@ -1442,6 +1443,48 @@ export const products: Product[] = [
       { supermarketId: "chandarana", price: 160 },
     ],
   },
+  {
+    id: "electric-kettle-1-7l",
+    name: "Electric Kettle",
+    category: "Appliances",
+    unit: "1.7L",
+    image: "https://images.unsplash.com/photo-1516315720917-231ef9acce48?w=100&h=100&fit=crop",
+    prices: [
+      { supermarketId: "naivas", price: 2599 },
+      { supermarketId: "quickmart", price: 2499 },
+      { supermarketId: "carrefour", price: 2399, onSale: true, originalPrice: 2699 },
+      { supermarketId: "cleanshelf", price: 2650 },
+      { supermarketId: "chandarana", price: 2720 },
+    ],
+  },
+  {
+    id: "steam-iron-1200w",
+    name: "Steam Iron",
+    category: "Appliances",
+    unit: "1200W",
+    image: "https://images.unsplash.com/photo-1582735689369-4fe89db7114c?w=100&h=100&fit=crop",
+    prices: [
+      { supermarketId: "naivas", price: 3299 },
+      { supermarketId: "quickmart", price: 3150 },
+      { supermarketId: "carrefour", price: 3050 },
+      { supermarketId: "cleanshelf", price: 3390 },
+      { supermarketId: "chandarana", price: 3450 },
+    ],
+  },
+  {
+    id: "blender-1-5l",
+    name: "Countertop Blender",
+    category: "Appliances",
+    unit: "1.5L",
+    image: "https://images.unsplash.com/photo-1570222094114-d054a817e56b?w=100&h=100&fit=crop",
+    prices: [
+      { supermarketId: "naivas", price: 4999 },
+      { supermarketId: "quickmart", price: 4799 },
+      { supermarketId: "carrefour", price: 4599, onSale: true, originalPrice: 5199 },
+      { supermarketId: "cleanshelf", price: 5090 },
+      { supermarketId: "chandarana", price: 5250 },
+    ],
+  },
 ];
 
 export const categories: Category[] = [
@@ -1456,6 +1499,7 @@ export const categories: Category[] = [
   "Meat & Poultry",
   "Bakery",
   "Alcohol",
+  "Appliances",
 ];
 
 export function getLowestPrice(product: Product): ProductPrice {

@@ -4,7 +4,6 @@ import { Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import {
   getLowestPrice,
-  categories,
 } from "@/data/products";
 import { useBasket } from "@/components/BasketContext";
 import { StoreBadge } from "@/components/StoreBadge";
@@ -51,6 +50,9 @@ function SupermarketContent() {
       if (!sp.storePrice) return sum;
       return sum + (sp.storePrice.price - sp.lowestPrice);
     }, 0) / storeProducts.length
+  );
+  const categories = Array.from(new Set(products.map((p) => p.category))).sort((a, b) =>
+    a.localeCompare(b)
   );
 
   const groupedByCategory = categories

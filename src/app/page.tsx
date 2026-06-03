@@ -3,7 +3,6 @@
 import { useState, useMemo } from "react";
 import {
   type Category,
-  categories,
   getSavings,
   getLowestPrice,
   getHighestPrice,
@@ -24,6 +23,10 @@ export default function HomePage() {
   const [category, setCategory] = useState<Category | null>(null);
   const [sortBy, setSortBy] = useState<SortKey>("name");
   const { addItem, getQuantity, updateQuantity } = useBasket();
+  const categories = useMemo(
+    () => Array.from(new Set(products.map((p) => p.category))).sort((a, b) => a.localeCompare(b)),
+    [products]
+  );
 
   const filtered = useMemo(() => {
     const list = products.filter((p) => {
